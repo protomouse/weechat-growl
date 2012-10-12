@@ -53,6 +53,7 @@ SETTINGS = {
     'show_channel_topic': 'on',
     'show_dcc': 'on',
     'show_upgrade_ended': 'on',
+    'ignore_active_window': 'on',
     'sticky': 'off',
     'sticky_away': 'on',
     'hostname': '',
@@ -359,7 +360,7 @@ def notify_dcc_send_failed(match):
 # -----------------------------------------------------------------------------
 # Utility
 # -----------------------------------------------------------------------------
-def set_away_status(prefix, message, highlighted):
+def set_away_status(prefix, message, highlighted, buffer_name):
     '''Sets away status for use by sticky notifications.'''
     regex = re.compile(r'^\[\w+ \b(away|back)\b:', re.UNICODE)
     match = regex.match(message)
@@ -387,11 +388,15 @@ def cb_process_message(
     is_public_message = tags.issuperset(
         TAGGED_MESSAGES['public message or action'])
     buffer_name = weechat.buffer_get_string(wbuffer, 'name')
+    display_count = weechat.buffer_get_integer(wbuffer, 'num_displayed')
     dcc_buffer_regex = re.compile(r'^irc_dcc\.', re.UNICODE)
     dcc_buffer_match = dcc_buffer_regex.match(buffer_name)
     highlighted = False
     if highlight == "1":
         highlighted = True
+    # Is this buffer currently displayed, with the 'ignore_active_window' setting on and the user not away?
+    if display_count > 0 and weechat.config_get_plugin('ignore_active_window') == 'on' and STATE['is_away'] == False:
+        return weechat.WEECHAT_RC_OK
     # Private DCC message identifies itself as public.
     if is_public_message and dcc_buffer_match:
         notify_private_message_or_action(prefix, message, highlighted, buffer_name)
