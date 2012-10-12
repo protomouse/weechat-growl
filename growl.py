@@ -172,17 +172,17 @@ def cb_notify_upgrade_ended(data, signal, signal_data):
     return weechat.WEECHAT_RC_OK
 
 
-def notify_highlighted_message(prefix, message):
+def notify_highlighted_message(prefix, message, buffer_name):
     '''Notify on highlighted message.'''
     if weechat.config_get_plugin("show_highlighted_message") == "on":
         growl_notify(
             'Highlight',
-            'Highlighted Message',
+            "Highlight in {0}".format(buffer_name),
             "{0}: {1}".format(prefix, message),
             priority=2)
 
 
-def notify_public_message_or_action(prefix, message, highlighted):
+def notify_public_message_or_action(prefix, message, highlighted, buffer_name):
     '''Notify on public message or action.'''
     if prefix == ' *':
         regex = re.compile(r'^(\w+) (.+)$', re.UNICODE)
@@ -193,7 +193,7 @@ def notify_public_message_or_action(prefix, message, highlighted):
             notify_public_action_message(prefix, message, highlighted)
     else:
         if highlighted:
-            notify_highlighted_message(prefix, message)
+            notify_highlighted_message(prefix, message, buffer_name)
         elif weechat.config_get_plugin("show_public_message") == "on":
             growl_notify(
                 'Public',
@@ -201,12 +201,12 @@ def notify_public_message_or_action(prefix, message, highlighted):
                 '{0}: {1}'.format(prefix, message))
 
 
-def notify_private_message_or_action(prefix, message, highlighted):
+def notify_private_message_or_action(prefix, message, highlighted, buffer_name):
     '''Notify on private message or action.'''
     regex = re.compile(r'^CTCP_MESSAGE.+?ACTION (.+)$', re.UNICODE)
     match = regex.match(message)
     if match:
-        notify_private_action_message(prefix, match.group(1), highlighted)
+        notify_private_action_message(prefix, match.group(1), highlighted, buffer_name)
     else:
         if prefix == ' *':
             regex = re.compile(r'^(\w+) (.+)$', re.UNICODE)
@@ -214,10 +214,10 @@ def notify_private_message_or_action(prefix, message, highlighted):
             if match:
                 prefix = match.group(1)
                 message = match.group(2)
-                notify_private_action_message(prefix, message, highlighted)
+                notify_private_action_message(prefix, message, highlighted, buffer_name)
         else:
             if highlighted:
-                notify_highlighted_message(prefix, message)
+                notify_highlighted_message(prefix, message, buffer_name)
             elif weechat.config_get_plugin("show_private_message") == "on":
                 growl_notify(
                     'Private',
@@ -228,7 +228,7 @@ def notify_private_message_or_action(prefix, message, highlighted):
 def notify_public_action_message(prefix, message, highlighted):
     '''Notify on public action message.'''
     if highlighted:
-        notify_highlighted_message(prefix, message)
+        notify_highlighted_message(prefix, message, buffer_name)
     elif weechat.config_get_plugin("show_public_action_message") == "on":
         growl_notify(
             'Action',
@@ -237,10 +237,10 @@ def notify_public_action_message(prefix, message, highlighted):
             priority=1)
 
 
-def notify_private_action_message(prefix, message, highlighted):
+def notify_private_action_message(prefix, message, highlighted, buffer_name):
     '''Notify on private action message.'''
     if highlighted:
-        notify_highlighted_message(prefix, message)
+        notify_highlighted_message(prefix, message, buffer_name)
     elif weechat.config_get_plugin("show_private_action_message") == "on":
         growl_notify(
             'Action',
@@ -249,7 +249,7 @@ def notify_private_action_message(prefix, message, highlighted):
             priority=1)
 
 
-def notify_notice_message(prefix, message, highlighted):
+def notify_notice_message(prefix, message, highlighted, buffer_name):
     '''Notify on notice message.'''
     regex = re.compile(r'^([^\s]*) [^:]*: (.+)$', re.UNICODE)
     match = regex.match(message)
@@ -257,7 +257,7 @@ def notify_notice_message(prefix, message, highlighted):
         prefix = match.group(1)
         message = match.group(2)
         if highlighted:
-            notify_highlighted_message(prefix, message)
+            notify_highlighted_message(prefix, message, buffer_name)
         elif weechat.config_get_plugin("show_notice_message") == "on":
             growl_notify(
                 'Notice',
@@ -394,7 +394,7 @@ def cb_process_message(
         highlighted = True
     # Private DCC message identifies itself as public.
     if is_public_message and dcc_buffer_match:
-        notify_private_message_or_action(prefix, message, highlighted)
+        notify_private_message_or_action(prefix, message, highlighted, buffer_name)
         return weechat.WEECHAT_RC_OK
     # Pass identified, untagged message to its designated function.
     for key, value in UNTAGGED_MESSAGES.items():
@@ -405,7 +405,7 @@ def cb_process_message(
     # Pass identified, tagged message to its designated function.
     for key, value in TAGGED_MESSAGES.items():
         if tags.issuperset(value):
-            functions[DISPATCH_TABLE[key]](prefix, message, highlighted)
+            functions[DISPATCH_TABLE[key]](prefix, message, highlighted, buffer_name)
             return weechat.WEECHAT_RC_OK
     return weechat.WEECHAT_RC_OK
 
