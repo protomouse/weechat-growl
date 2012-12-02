@@ -66,6 +66,7 @@ SETTINGS = {
 # Imports
 # -----------------------------------------------------------------------------
 try:
+    from __future__ import with_statement
     import re
     import os
     import weechat
@@ -360,6 +361,16 @@ def notify_dcc_send_failed(match):
 # -----------------------------------------------------------------------------
 # Utility
 # -----------------------------------------------------------------------------
+def read_icon():
+    try:
+        with open(STATE['icon'], 'rb') as icon:
+            return icon.read()
+
+    except:
+        return None
+
+    return None
+
 def set_away_status(prefix, message, highlighted, buffer_name):
     '''Sets away status for use by sticky notifications.'''
     regex = re.compile(r'^\[\w+ \b(away|back)\b:', re.UNICODE)
@@ -419,7 +430,6 @@ def growl_notify(notification, title, description, priority=None):
     '''Returns whether Growl notifications should be sticky.'''
     growl = STATE['growl']
     is_away = STATE['is_away']
-    icon = STATE['icon']
     is_sticky = False
     if weechat.config_get_plugin('sticky') == 'on':
         is_sticky = True
@@ -430,7 +440,7 @@ def growl_notify(notification, title, description, priority=None):
             noteType=notification,
             title=title,
             description=description,
-            icon=icon,
+            icon=read_icon(),
             sticky=is_sticky,
             priority=priority)
     except Exception as error:
